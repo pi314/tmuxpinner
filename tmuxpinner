@@ -1,0 +1,94 @@
+#!/usr/bin/env sh
+
+SPIN_ENTRY='⠉⠛⠿⣿⠿⠛⠉⠙'
+SPIN_LOOP='⠹⢸⣰⣤⣆⡇⠏⠛'
+
+UNIQ_INDEX=$$
+OPTION_NAME_SPINNER="@spinner${UNIQ_INDEX}"
+
+setup_tmux_option () {
+    option_name="$1"
+
+    option_value="$(tmux show-options -v -g ${option_name})"
+    if [ -z "${option_value}" ]; then
+        option_value='#{@spinner}'
+    fi
+
+    option_value="$(echo ${option_value} | sed 's/#{@spinner}/#{'${OPTION_NAME_SPINNER}'}/g')"
+    tmux set-option -w "${option_name}" "${option_value}"
+}
+
+
+teardown_tmux_option () {
+    option_name="$1"
+    tmux set-option -u -w "${option_name}"
+}
+
+
+setup () {
+    setup_tmux_option "window-status-format"
+    setup_tmux_option "window-status-current-format"
+}
+
+
+teardown () {
+    tmux set-option -g -u "${OPTION_NAME_SPINNER}"
+    teardown_tmux_option "window-status-format"
+    teardown_tmux_option "window-status-current-format"
+    stop_animate
+}
+
+
+animate () {
+    i=0
+    while [ $i -lt ${#SPIN_ENTRY} ]; do
+        tmux set-option -g "${OPTION_NAME_SPINNER}" "${SPIN_ENTRY:$i:1}"
+        i=$(( i + 1 ))
+        sleep 0.1
+    done
+
+    i=0
+    while true; do
+        tmux set-option -g "${OPTION_NAME_SPINNER}" "${SPIN_LOOP:$i:1}"
+        i=$(( (i + 1) % ${#SPIN_LOOP} ))
+        sleep 0.1
+    done
+}
+
+
+stop_animate () {
+    if [ -n "$SPINNER_PID" ]; then
+        kill $SPINNER_PID
+    fi
+}
+
+
+main () {
+    trap "teardown; exit" SIGINT SIGTERM
+
+    setup
+
+    if [ "$1" = '-w' ] || [ "$1" = '--wait' ]; then
+        shift
+        wait_pid=$1
+    fi
+
+    animate &
+    SPINNER_PID=$!
+
+    echo 'Spinner PID:' $SPINNER_PID
+    echo 'Tmux option:' ${OPTION_NAME_SPINNER}
+
+    if [ -n "${wait_pid}" ]; then
+        caffeinate -w "${wait_pid}"
+    elif [ -n "$1" ]; then
+        command "$@"
+    else
+        caffeinate -w ${SPINNER_PID}
+    fi
+
+    teardown
+}
+
+
+main "$@"
