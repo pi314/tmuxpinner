@@ -122,8 +122,10 @@ main () {
     animate &
     SPINNER_PID="$!"
 
-    echo 'Spinner PID:' $SPINNER_PID
-    echo 'Tmux option:' ${OPTION_NAME_SPINNER}
+    if [ -t 1 ] ; then
+        echo 'Spinner PID:' $SPINNER_PID
+        echo 'Tmux option:' ${OPTION_NAME_SPINNER}
+    fi
 
     if [ -n "${wait_for_pid}" ]; then
         waitpid "${wait_for_pid}"
