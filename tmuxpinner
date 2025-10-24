@@ -63,31 +63,80 @@ stop_animate () {
 }
 
 
+waitpid () {
+    pid="$1"
+    if [ -z "$pid" ]; then
+        return 1
+    fi
+
+    kill -s 0 "$pid" >/dev/null 2>&1
+    pid_not_exists="$?"
+    if [ $pid_not_exists -ne 0 ]; then
+        return "${pid_not_exists}"
+    fi
+
+    if command -v caffeinate >/dev/null 2>&1; then
+        caffeinate -w "$pid"
+        return "$?"
+
+    else
+        while kill -s 0 "$pid" >/dev/null 2>&1; do
+            sleep 1
+        done
+    fi
+}
+
+
+usage () {
+    proc="$(basename $1)"
+    echo 'Usage:'
+    echo "$ ${proc}"
+    echo "$ ${proc} [-h|--help]"
+    echo "$ ${proc} command [args ...]"
+    echo "$ ${proc} -w PID"
+    exit 1
+}
+
+
 main () {
     trap "teardown; exit" SIGINT SIGTERM
 
+    wait_for_pid=''
+
+    while [ "$#" -ne 0 ]; do
+        if [ "$1" = '-h' ] || [ "$1" = '--help' ]; then
+            usage "$0"
+
+        elif [ "$1" = '-w' ] || [ "$1" = '--wait' ]; then
+            shift
+            wait_for_pid="$1"
+        fi
+
+        shift
+    done
+
     setup
 
-    if [ "$1" = '-w' ] || [ "$1" = '--wait' ]; then
-        shift
-        wait_pid=$1
-    fi
-
     animate &
-    SPINNER_PID=$!
+    SPINNER_PID="$!"
 
     echo 'Spinner PID:' $SPINNER_PID
     echo 'Tmux option:' ${OPTION_NAME_SPINNER}
 
-    if [ -n "${wait_pid}" ]; then
-        caffeinate -w "${wait_pid}"
+    if [ -n "${wait_for_pid}" ]; then
+        waitpid "${wait_for_pid}"
+        ret="$?"
     elif [ -n "$1" ]; then
         command "$@"
+        ret="$?"
     else
-        caffeinate -w ${SPINNER_PID}
+        waitpid "${SPINNER_PID}"
+        ret="$?"
     fi
 
     teardown
+
+    return "${ret}"
 }
 
 

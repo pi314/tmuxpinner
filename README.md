@@ -7,9 +7,7 @@ Put it in to a folder that is in your `PATH`, e.g. `~/bin`.
 
 
 ## Dependencies
-Currently only `sh`.
-
-Better use `bash` or `zsh`, I'm not very sure if the script is POSIX compatible.
+`bash` or `zsh`, the script is written mainly in `sh` but not POSIX compatible.
 
 
 ## Configuration
@@ -28,6 +26,12 @@ In your `.tmux.conf`,
     ```
 
 ## Usage
+Show usage:
+```console
+$ tmuxpinner -h
+$ tmuxpinner --help
+```
+
 Display a spinner indefinitely:
 ```console
 $ tmuxpinner
@@ -38,12 +42,17 @@ Run a command and display a spinner until the command ends:
 $ tmuxpinner sleep 5
 ```
 
+Display a spinner until the specified pid finishes:
+```console
+$ tmuxpinner -w 31415
+```
+
+On macOS it uses `caffeinate -w PID`; On Linux it uses `kill -s 0 PID` and polling the result.
+
 
 # TODO
 
 *   Add `status-left` and `status-right`
-
-*   `-w`/`--wait` for Linux
 
 *   Properly backup `-w` `window-status-format` and `window-status-current-format`
 
