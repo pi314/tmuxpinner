@@ -3,8 +3,8 @@
 SPIN_ENTRY='⠉⠛⠿⣿⠿⠛⠉⠙'
 SPIN_LOOP='⠹⢸⣰⣤⣆⡇⠏⠛'
 
-UNIQ_INDEX=$$
-OPTION_NAME_SPINNER="@spinner${UNIQ_INDEX}"
+TMUX_WINDOW_ID=$(tmux display-message -p '#{window_id}')
+OPTION_NAME_SPINNER="@spinner${TMUX_WINDOW_ID}"
 
 setup_tmux_option () {
     option_name="$1"
@@ -21,7 +21,7 @@ setup_tmux_option () {
 
 teardown_tmux_option () {
     option_name="$1"
-    tmux set-option -u -w "${option_name}"
+    tmux set-option -u -w -t "${TMUX_WINDOW_ID}" "${option_name}"
 }
 
 
